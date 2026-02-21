@@ -38,7 +38,8 @@ docker run --rm -v $(pwd):/root/env youos-builder make
 ### 3. 运行
 
 ```bash
-qemu-system-i386 -kernel build/youos.bin
+# qemu-system-i386 -kernel build/youos.bin
+make run
 ```
 
 ### 4. 清理构建产物
