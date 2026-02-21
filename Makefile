@@ -14,7 +14,7 @@ build/boot.o: arch/i386/boot.s
 build/kernel.o: kernel/kernel.c
 	$(CC) -c kernel/kernel.c -o build/kernel.o $(CFLAGS)
 
-run: youos.bin
+run:
 	qemu-system-i386 -kernel build/youos.bin
 
 clean:
