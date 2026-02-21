@@ -1,8 +1,10 @@
 # 1. 使用最干净的 Ubuntu 作为基础底座
 FROM ubuntu:22.04
 
-# 2. 安装解压工具、Make 和汇编器 NASM
-RUN apt-get update && apt-get install -y wget unzip make nasm
+# 2. 安装解压工具、Make、汇编器 NASM，以及 32 位运行库（i686-elf-gcc 是 32 位程序）
+RUN dpkg --add-architecture i386 && \
+    apt-get update && \
+    apt-get install -y wget unzip make nasm libc6:i386 libstdc++6:i386 zlib1g:i386
 
 # 3. 下载预编译好的 i686-elf-gcc（大约 100MB，瞬间下完）
 RUN wget https://github.com/lordmilko/i686-elf-tools/releases/download/7.1.0/i686-elf-tools-linux.zip
