@@ -1,0 +1,19 @@
+# 编译产物
+*.o
+*.a
+*.elf
+*.bin
+*.iso
+*.img
+
+# 构建目录
+build/
+
+# GRUB 相关
+isodir/
+
+# 编辑器 / 系统文件
+.DS_Store
+*.swp
+*.swo
+*~
