@@ -1,17 +1,81 @@
 #include <stdint.h>
+#include <stddef.h>
 
+/* ── VGA 文本模式常量 ── */
+#define VGA_WIDTH   80
+#define VGA_HEIGHT  25
+#define VGA_ADDR    0xB8000
+
+/* ── 终端状态 ── */
+static uint16_t* const vga_buffer = (uint16_t*)VGA_ADDR;
+static size_t    terminal_row;
+static size_t    terminal_col;
+static uint8_t   terminal_color;
+
+/* 构造一个 VGA 条目：低 8 位 = ASCII，高 8 位 = 颜色属性 */
+static inline uint16_t vga_entry(unsigned char ch, uint8_t color) {
+    return (uint16_t)ch | (uint16_t)color << 8;
+}
+
+/* ── 滚动：把第 1~24 行上移一行，清空最后一行 ── */
+static void terminal_scroll(void) {
+    /* 将第 1 行起的内容复制到第 0 行 */
+    for (size_t i = 0; i < VGA_WIDTH * (VGA_HEIGHT - 1); i++) {
+        vga_buffer[i] = vga_buffer[i + VGA_WIDTH];
+    }
+    /* 最后一行用空格填充 */
+    for (size_t x = 0; x < VGA_WIDTH; x++) {
+        vga_buffer[(VGA_HEIGHT - 1) * VGA_WIDTH + x] =
+            vga_entry(' ', terminal_color);
+    }
+}
+
+/* ── 初始化终端：清屏 + 光标归零 ── */
+static void terminal_initialize(void) {
+    terminal_row   = 0;
+    terminal_col   = 0;
+    terminal_color = 0x0A;  /* 黑底绿字 */
+
+    for (size_t i = 0; i < VGA_WIDTH * VGA_HEIGHT; i++) {
+        vga_buffer[i] = vga_entry(' ', terminal_color);
+    }
+}
+
+/* ── 写单个字符，支持 '\n' 换行 + 自动滚动 ── */
+static void terminal_putchar(char ch) {
+    if (ch == '\n') {
+        terminal_col = 0;
+        terminal_row++;
+    } else {
+        size_t idx = terminal_row * VGA_WIDTH + terminal_col;
+        vga_buffer[idx] = vga_entry((unsigned char)ch, terminal_color);
+        terminal_col++;
+
+        /* 一行写满自动换行 */
+        if (terminal_col >= VGA_WIDTH) {
+            terminal_col = 0;
+            terminal_row++;
+        }
+    }
+
+    /* 超过屏幕底部 → 滚动 */
+    if (terminal_row >= VGA_HEIGHT) {
+        terminal_scroll();
+        terminal_row = VGA_HEIGHT - 1;
+    }
+}
+
+/* ── 写字符串 ── */
+void terminal_write(const char* str) {
+    for (size_t i = 0; str[i] != '\0'; i++) {
+        terminal_putchar(str[i]);
+    }
+}
+
+/* ── 内核入口 ── */
 void kernel_main(void) {
-    // 0xB8000 是 VGA 文本显存地址
-    volatile uint16_t* vga_buffer = (uint16_t*)0xB8000;
+    terminal_initialize();
 
-    // 先清屏：80列 x 25行 = 2000 个字符位，全部填空格（黑底黑字）
-    for (int i = 0; i < 80 * 25; i++) {
-        vga_buffer[i] = (uint16_t)' ' | (uint16_t)0x0A << 8;
-    }
-
-    const char* str = "Welcome to youOS!";
-    for (int i = 0; str[i] != '\0'; i++) {
-        // 0x0A 表示黑底绿字
-        vga_buffer[i] = (uint16_t)str[i] | (uint16_t)0x0A << 8;
-    }
+    terminal_write("Welcome to youOS!\n");
+    terminal_write("Terminal ready.\n");
 }
