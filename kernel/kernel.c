@@ -1,6 +1,12 @@
 #include <stdint.h>
 #include <stddef.h>
 
+#include "idt.h"
+#include "keyboard.h"
+#include "pic.h"
+#include "pit.h"
+#include "terminal.h"
+
 /* ── VGA 文本模式常量 ── */
 #define VGA_WIDTH   80
 #define VGA_HEIGHT  25
@@ -31,7 +37,7 @@ static void terminal_scroll(void) {
 }
 
 /* ── 初始化终端：清屏 + 光标归零 ── */
-static void terminal_initialize(void) {
+void terminal_initialize(void) {
     terminal_row   = 0;
     terminal_col   = 0;
     terminal_color = 0x0A;  /* 黑底绿字 */
@@ -42,7 +48,7 @@ static void terminal_initialize(void) {
 }
 
 /* ── 写单个字符，支持 '\n' 换行 + 自动滚动 ── */
-static void terminal_putchar(char ch) {
+void terminal_putchar(char ch) {
     if (ch == '\n') {
         terminal_col = 0;
         terminal_row++;
@@ -72,10 +78,42 @@ void terminal_write(const char* str) {
     }
 }
 
+void terminal_write_hex8(uint8_t value) {
+    static const char digits[] = "0123456789ABCDEF";
+    char buffer[3];
+
+    buffer[0] = digits[(value >> 4) & 0x0F];
+    buffer[1] = digits[value & 0x0F];
+    buffer[2] = '\0';
+
+    terminal_write(buffer);
+}
+
 /* ── 内核入口 ── */
 void kernel_main(void) {
     terminal_initialize();
 
     terminal_write("Welcome to youOS!\n");
-    terminal_write("Terminal ready.\n");
+    terminal_write("[init] IDT setup...\n");
+
+    idt_install();
+    pic_remap(0x20, 0x28);
+
+    terminal_write("[init] PIT setup...\n");
+    pit_init(100);
+
+    terminal_write("[init] Keyboard setup...\n");
+    keyboard_init();
+
+    /* 仅开启时钟和键盘中断，避免未实现 IRQ 干扰。 */
+    pic_clear_mask(0);
+    pic_clear_mask(1);
+
+    __asm__ volatile ("sti");
+
+    terminal_write("[ok] IRQ0/IRQ1 enabled. Type on keyboard.\n");
+
+    for (;;) {
+        __asm__ volatile ("hlt");
+    }
 }
