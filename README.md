@@ -29,7 +29,13 @@ scripts/linker.ld     # 链接器脚本
 Makefile              # 构建规则
 Dockerfile            # 交叉编译环境
 docs/phase1-summary.md # Phase 1 技术总结
+docs/ARCHITECTURE.md  # 架构设计与中断链路
 ```
+
+## 文档导航
+
+- docs/ARCHITECTURE.md: 启动路径、模块分层、中断处理链路与设计取舍
+- docs/phase1-summary.md: Phase 1 的实现复盘（What/Why/验证/限制）
 
 ## 前置依赖
 
@@ -80,4 +86,4 @@ docker run --rm -v $(pwd):/root/env youos-builder make clean
 - 主循环使用 `hlt`：让 CPU 在空闲时休眠，依赖中断唤醒，贴近真实内核事件驱动模型。
 - 中断桩统一落到 C 层分发：后续新增驱动时只需注册 handler，扩展成本更低。
 
-详细技术复盘见 `docs/phase1-summary.md`。
+详细技术复盘见 `docs/phase1-summary.md`，架构讲解见 `docs/ARCHITECTURE.md`。
