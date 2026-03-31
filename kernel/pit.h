@@ -5,5 +5,6 @@
 
 void pit_init(uint32_t frequency_hz);
 uint32_t pit_get_ticks(void);
+uint32_t pit_get_frequency_hz(void);
 
 #endif

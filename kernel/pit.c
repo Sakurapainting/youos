@@ -9,6 +9,7 @@
 #define PIT_BASE_FREQUENCY 1193180u
 
 static volatile uint32_t pit_ticks = 0;
+static uint32_t pit_frequency_hz = 100;
 
 static void pit_irq_handler(registers_t* regs) {
     (void)regs;
@@ -22,6 +23,8 @@ void pit_init(uint32_t frequency_hz) {
         frequency_hz = 100;
     }
 
+    pit_frequency_hz = frequency_hz;
+
     divisor = PIT_BASE_FREQUENCY / frequency_hz;
 
     outb(PIT_COMMAND, 0x36);
@@ -33,4 +36,8 @@ void pit_init(uint32_t frequency_hz) {
 
 uint32_t pit_get_ticks(void) {
     return pit_ticks;
+}
+
+uint32_t pit_get_frequency_hz(void) {
+    return pit_frequency_hz;
 }
