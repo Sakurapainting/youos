@@ -3,6 +3,7 @@
 
 #include "idt.h"
 #include "keyboard.h"
+#include "memory.h"
 #include "pic.h"
 #include "pit.h"
 #include "serial.h"
@@ -144,7 +145,7 @@ void terminal_write_dec32(uint32_t value) {
 }
 
 /* ── 内核入口 ── */
-void kernel_main(void) {
+void kernel_main(uint32_t multiboot_magic, uint32_t multiboot_addr) {
     terminal_initialize();
     serial_init();
 
@@ -160,6 +161,10 @@ void kernel_main(void) {
     serial_write("[init] PIT setup...\n");
     pit_init(100);
 
+    terminal_write("[init] Memory info...\n");
+    serial_write("[init] Memory info...\n");
+    memory_init(multiboot_magic, multiboot_addr);
+
     terminal_write("[init] Keyboard setup...\n");
     serial_write("[init] Keyboard setup...\n");
     keyboard_init();
@@ -172,6 +177,15 @@ void kernel_main(void) {
 
     terminal_write("[ok] IRQ0/IRQ1 enabled.\n");
     serial_write("[ok] IRQ0/IRQ1 enabled.\n");
+
+    if (memory_is_ready()) {
+        terminal_write("[ok] Memory map parsed.\n");
+        serial_write("[ok] Memory map parsed.\n");
+    } else {
+        terminal_write("[warn] Memory map unavailable.\n");
+        serial_write("[warn] Memory map unavailable.\n");
+    }
+
     shell_init();
 
     for (;;) {
