@@ -5,6 +5,7 @@
 #include "keyboard.h"
 #include "pic.h"
 #include "pit.h"
+#include "shell.h"
 #include "terminal.h"
 
 /* ── VGA 文本模式常量 ── */
@@ -45,6 +46,10 @@ void terminal_initialize(void) {
     for (size_t i = 0; i < VGA_WIDTH * VGA_HEIGHT; i++) {
         vga_buffer[i] = vga_entry(' ', terminal_color);
     }
+}
+
+void terminal_clear(void) {
+    terminal_initialize();
 }
 
 /* ── 写单个字符，支持 '\n' 换行 + 自动滚动 ── */
@@ -89,6 +94,26 @@ void terminal_write_hex8(uint8_t value) {
     terminal_write(buffer);
 }
 
+void terminal_write_dec32(uint32_t value) {
+    char buffer[11];
+    size_t i = 0;
+
+    if (value == 0) {
+        terminal_putchar('0');
+        return;
+    }
+
+    while (value > 0 && i < sizeof(buffer)) {
+        buffer[i++] = (char)('0' + (value % 10));
+        value /= 10;
+    }
+
+    while (i > 0) {
+        i--;
+        terminal_putchar(buffer[i]);
+    }
+}
+
 /* ── 内核入口 ── */
 void kernel_main(void) {
     terminal_initialize();
@@ -111,9 +136,11 @@ void kernel_main(void) {
 
     __asm__ volatile ("sti");
 
-    terminal_write("[ok] IRQ0/IRQ1 enabled. Type on keyboard.\n");
+    terminal_write("[ok] IRQ0/IRQ1 enabled.\n");
+    shell_init();
 
     for (;;) {
         __asm__ volatile ("hlt");
+        shell_poll();
     }
 }
