@@ -3,9 +3,9 @@
 #include "idt.h"
 #include "io.h"
 #include "keyboard.h"
-#include "terminal.h"
 
 #define KEYBOARD_DATA_PORT 0x60
+#define KEYBOARD_BUFFER_SIZE 128
 
 static const char scancode_map[128] = {
     [1] = 27,
@@ -24,6 +24,21 @@ static const char scancode_map[128] = {
     [74] = '-', [78] = '+'
 };
 
+static volatile uint8_t keyboard_head;
+static volatile uint8_t keyboard_tail;
+static char keyboard_buffer[KEYBOARD_BUFFER_SIZE];
+
+static void keyboard_buffer_push(char ch) {
+    uint8_t next_head = (uint8_t)((keyboard_head + 1) & (KEYBOARD_BUFFER_SIZE - 1));
+
+    if (next_head == keyboard_tail) {
+        return;
+    }
+
+    keyboard_buffer[keyboard_head] = ch;
+    keyboard_head = next_head;
+}
+
 static void keyboard_irq_handler(registers_t* regs) {
     uint8_t scancode;
     char ch;
@@ -38,15 +53,23 @@ static void keyboard_irq_handler(registers_t* regs) {
 
     ch = scancode_map[scancode];
 
-    if (ch == '\b') {
-        return;
-    }
-
     if (ch != 0) {
-        terminal_putchar(ch);
+        keyboard_buffer_push(ch);
     }
 }
 
 void keyboard_init(void) {
+    keyboard_head = 0;
+    keyboard_tail = 0;
     register_interrupt_handler(IRQ1, keyboard_irq_handler);
+}
+
+int keyboard_read_char(char* out_char) {
+    if (keyboard_head == keyboard_tail) {
+        return 0;
+    }
+
+    *out_char = keyboard_buffer[keyboard_tail];
+    keyboard_tail = (uint8_t)((keyboard_tail + 1) & (KEYBOARD_BUFFER_SIZE - 1));
+    return 1;
 }
