@@ -8,6 +8,7 @@ void terminal_clear(void);
 void terminal_putchar(char ch);
 void terminal_write(const char* str);
 void terminal_write_hex8(uint8_t value);
+void terminal_write_hex32(uint32_t value);
 void terminal_write_dec32(uint32_t value);
 
 #endif

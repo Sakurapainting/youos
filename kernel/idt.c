@@ -3,6 +3,7 @@
 
 #include "idt.h"
 #include "pic.h"
+#include "serial.h"
 #include "terminal.h"
 
 typedef struct idt_entry {
@@ -158,7 +159,61 @@ void isr_handler(registers_t* regs) {
 
     terminal_write("[EXC] Unhandled interrupt: 0x");
     terminal_write_hex8((uint8_t)regs->int_no);
+    terminal_write(" err=0x");
+    terminal_write_hex32(regs->err_code);
     terminal_write("\n");
+    terminal_write("      eip=0x");
+    terminal_write_hex32(regs->eip);
+    terminal_write(" cs=0x");
+    terminal_write_hex32(regs->cs);
+    terminal_write(" eflags=0x");
+    terminal_write_hex32(regs->eflags);
+    terminal_write("\n");
+    terminal_write("      eax=0x");
+    terminal_write_hex32(regs->eax);
+    terminal_write(" ebx=0x");
+    terminal_write_hex32(regs->ebx);
+    terminal_write(" ecx=0x");
+    terminal_write_hex32(regs->ecx);
+    terminal_write(" edx=0x");
+    terminal_write_hex32(regs->edx);
+    terminal_write("\n");
+    terminal_write("      esi=0x");
+    terminal_write_hex32(regs->esi);
+    terminal_write(" edi=0x");
+    terminal_write_hex32(regs->edi);
+    terminal_write(" ebp=0x");
+    terminal_write_hex32(regs->ebp);
+    terminal_write("\n");
+
+    serial_write("[EXC] Unhandled interrupt: 0x");
+    serial_write_hex8((uint8_t)regs->int_no);
+    serial_write(" err=0x");
+    serial_write_hex32(regs->err_code);
+    serial_write("\n");
+    serial_write("      eip=0x");
+    serial_write_hex32(regs->eip);
+    serial_write(" cs=0x");
+    serial_write_hex32(regs->cs);
+    serial_write(" eflags=0x");
+    serial_write_hex32(regs->eflags);
+    serial_write("\n");
+    serial_write("      eax=0x");
+    serial_write_hex32(regs->eax);
+    serial_write(" ebx=0x");
+    serial_write_hex32(regs->ebx);
+    serial_write(" ecx=0x");
+    serial_write_hex32(regs->ecx);
+    serial_write(" edx=0x");
+    serial_write_hex32(regs->edx);
+    serial_write("\n");
+    serial_write("      esi=0x");
+    serial_write_hex32(regs->esi);
+    serial_write(" edi=0x");
+    serial_write_hex32(regs->edi);
+    serial_write(" ebp=0x");
+    serial_write_hex32(regs->ebp);
+    serial_write("\n");
 
     for (;;) {
         __asm__ volatile ("cli; hlt");

@@ -5,6 +5,7 @@
 #include "keyboard.h"
 #include "pic.h"
 #include "pit.h"
+#include "serial.h"
 #include "shell.h"
 #include "terminal.h"
 
@@ -94,6 +95,16 @@ void terminal_write_hex8(uint8_t value) {
     terminal_write(buffer);
 }
 
+void terminal_write_hex32(uint32_t value) {
+    static const char digits[] = "0123456789ABCDEF";
+    int shift = 28;
+
+    while (shift >= 0) {
+        terminal_putchar(digits[(value >> (uint32_t)shift) & 0x0F]);
+        shift -= 4;
+    }
+}
+
 void terminal_write_dec32(uint32_t value) {
     char buffer[11];
     size_t i = 0;
@@ -117,17 +128,22 @@ void terminal_write_dec32(uint32_t value) {
 /* ── 内核入口 ── */
 void kernel_main(void) {
     terminal_initialize();
+    serial_init();
 
     terminal_write("Welcome to youOS!\n");
+    serial_write("Welcome to youOS!\n");
     terminal_write("[init] IDT setup...\n");
+    serial_write("[init] IDT setup...\n");
 
     idt_install();
     pic_remap(0x20, 0x28);
 
     terminal_write("[init] PIT setup...\n");
+    serial_write("[init] PIT setup...\n");
     pit_init(100);
 
     terminal_write("[init] Keyboard setup...\n");
+    serial_write("[init] Keyboard setup...\n");
     keyboard_init();
 
     /* 仅开启时钟和键盘中断，避免未实现 IRQ 干扰。 */
@@ -137,6 +153,7 @@ void kernel_main(void) {
     __asm__ volatile ("sti");
 
     terminal_write("[ok] IRQ0/IRQ1 enabled.\n");
+    serial_write("[ok] IRQ0/IRQ1 enabled.\n");
     shell_init();
 
     for (;;) {
