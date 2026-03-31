@@ -47,12 +47,19 @@ static void shell_prompt(void) {
 
 static void shell_print_help(void) {
     terminal_write("Commands:\n");
+    terminal_write("  about  - show build capabilities\n");
     terminal_write("  help   - show this help\n");
     terminal_write("  clear  - clear screen\n");
     terminal_write("  ticks  - show PIT ticks\n");
     terminal_write("  uptime - show uptime from PIT\n");
     terminal_write("  history- show recent commands\n");
+    terminal_write("  panic  - trigger int3 for exception dump\n");
     terminal_write("  echo X - print X\n");
+}
+
+static void shell_print_about(void) {
+    terminal_write("youOS: i386 educational kernel\n");
+    terminal_write("features: IDT, PIC, PIT, PS/2 keyboard, shell, serial debug\n");
 }
 
 static void shell_history_push(const char* command) {
@@ -137,6 +144,11 @@ static void shell_execute(const char* command) {
 
     shell_history_push(cursor);
 
+    if (streq(cursor, "about")) {
+        shell_print_about();
+        return;
+    }
+
     if (streq(cursor, "help")) {
         shell_print_help();
         return;
@@ -161,6 +173,12 @@ static void shell_execute(const char* command) {
 
     if (streq(cursor, "history")) {
         shell_print_history();
+        return;
+    }
+
+    if (streq(cursor, "panic")) {
+        terminal_write("triggering int3...\n");
+        __asm__ volatile ("int $0x03");
         return;
     }
 
