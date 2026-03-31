@@ -2,7 +2,7 @@ CC = i686-elf-gcc
 AS = nasm
 CFLAGS = -std=gnu99 -ffreestanding -O2 -Wall -Wextra -Ikernel
 LDFLAGS = -ffreestanding -O2 -nostdlib -lgcc
-OBJS = build/boot.o build/isr.o build/kernel.o build/idt.o build/pic.o build/pit.o build/keyboard.o build/shell.o build/serial.o build/memory.o
+OBJS = build/boot.o build/isr.o build/kernel.o build/idt.o build/pic.o build/pit.o build/keyboard.o build/shell.o build/serial.o build/memory.o build/heap.o
 
 all: youos.bin
 
@@ -15,7 +15,7 @@ build/boot.o: arch/i386/boot.s | build-dir
 build/isr.o: arch/i386/isr.s | build-dir
 	$(AS) -felf32 arch/i386/isr.s -o build/isr.o
 
-build/kernel.o: kernel/kernel.c kernel/terminal.h kernel/idt.h kernel/pic.h kernel/pit.h kernel/keyboard.h kernel/shell.h kernel/serial.h kernel/memory.h | build-dir
+build/kernel.o: kernel/kernel.c kernel/terminal.h kernel/idt.h kernel/pic.h kernel/pit.h kernel/keyboard.h kernel/shell.h kernel/serial.h kernel/memory.h kernel/heap.h | build-dir
 	$(CC) -c kernel/kernel.c -o build/kernel.o $(CFLAGS)
 
 build/idt.o: kernel/idt.c kernel/idt.h kernel/terminal.h kernel/pic.h kernel/serial.h | build-dir
@@ -38,6 +38,9 @@ build/serial.o: kernel/serial.c kernel/serial.h kernel/io.h | build-dir
 
 build/memory.o: kernel/memory.c kernel/memory.h | build-dir
 	$(CC) -c kernel/memory.c -o build/memory.o $(CFLAGS)
+
+build/heap.o: kernel/heap.c kernel/heap.h | build-dir
+	$(CC) -c kernel/heap.c -o build/heap.o $(CFLAGS)
 
 build-dir:
 	mkdir -p build
