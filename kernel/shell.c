@@ -1,6 +1,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "heap.h"
 #include "keyboard.h"
 #include "memory.h"
 #include "pit.h"
@@ -49,8 +50,10 @@ static void shell_prompt(void) {
 static void shell_print_help(void) {
     terminal_write("Commands:\n");
     terminal_write("  about  - show build capabilities\n");
+    terminal_write("  alloc N- allocate N bytes from heap\n");
     terminal_write("  help   - show this help\n");
     terminal_write("  clear  - clear screen\n");
+    terminal_write("  heap   - show heap usage\n");
     terminal_write("  meminfo- show memory map summary\n");
     terminal_write("  ticks  - show PIT ticks\n");
     terminal_write("  uptime - show uptime from PIT\n");
@@ -61,7 +64,7 @@ static void shell_print_help(void) {
 
 static void shell_print_about(void) {
     terminal_write("youOS: i386 educational kernel\n");
-    terminal_write("features: IDT, PIC, PIT, PS/2 keyboard, shell, serial debug\n");
+    terminal_write("features: IDT, PIC, PIT, PS/2 keyboard, shell, heap, serial debug\n");
 }
 
 static void shell_history_push(const char* command) {
@@ -152,6 +155,43 @@ static void shell_print_history(void) {
     }
 }
 
+static void shell_print_heap(void) {
+    if (!heap_is_ready()) {
+        terminal_write("heap: unavailable\n");
+        return;
+    }
+
+    terminal_write("heap used : ");
+    terminal_write_dec32(heap_used_bytes());
+    terminal_write(" bytes\n");
+
+    terminal_write("heap total: ");
+    terminal_write_dec32(heap_total_bytes());
+    terminal_write(" bytes\n");
+}
+
+static int shell_parse_uint32(const char* text, uint32_t* value_out) {
+    uint32_t value = 0;
+    int seen = 0;
+
+    while (*text == ' ' || *text == '\t') {
+        text++;
+    }
+
+    while (*text >= '0' && *text <= '9') {
+        value = (value * 10u) + (uint32_t)(*text - '0');
+        text++;
+        seen = 1;
+    }
+
+    if (!seen) {
+        return 0;
+    }
+
+    *value_out = value;
+    return 1;
+}
+
 static void shell_execute(const char* command) {
     const char* cursor = command;
 
@@ -170,6 +210,29 @@ static void shell_execute(const char* command) {
         return;
     }
 
+    if (starts_with(cursor, "alloc")) {
+        uint32_t size = 0;
+        void* addr;
+
+        if (!shell_parse_uint32(cursor + 5, &size)) {
+            terminal_write("usage: alloc <bytes>\n");
+            return;
+        }
+
+        addr = heap_alloc(size, 16u);
+        if (addr == NULL) {
+            terminal_write("alloc failed\n");
+            return;
+        }
+
+        terminal_write("alloc: addr=0x");
+        terminal_write_hex32((uint32_t)(uintptr_t)addr);
+        terminal_write(" size=");
+        terminal_write_dec32(size);
+        terminal_putchar('\n');
+        return;
+    }
+
     if (streq(cursor, "help")) {
         shell_print_help();
         return;
@@ -177,6 +240,11 @@ static void shell_execute(const char* command) {
 
     if (streq(cursor, "clear")) {
         terminal_clear();
+        return;
+    }
+
+    if (streq(cursor, "heap")) {
+        shell_print_heap();
         return;
     }
 

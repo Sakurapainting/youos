@@ -2,6 +2,7 @@
 #include <stddef.h>
 
 #include "idt.h"
+#include "heap.h"
 #include "keyboard.h"
 #include "memory.h"
 #include "pic.h"
@@ -165,6 +166,10 @@ void kernel_main(uint32_t multiboot_magic, uint32_t multiboot_addr) {
     serial_write("[init] Memory info...\n");
     memory_init(multiboot_magic, multiboot_addr);
 
+    terminal_write("[init] Heap setup...\n");
+    serial_write("[init] Heap setup...\n");
+    heap_init();
+
     terminal_write("[init] Keyboard setup...\n");
     serial_write("[init] Keyboard setup...\n");
     keyboard_init();
@@ -184,6 +189,14 @@ void kernel_main(uint32_t multiboot_magic, uint32_t multiboot_addr) {
     } else {
         terminal_write("[warn] Memory map unavailable.\n");
         serial_write("[warn] Memory map unavailable.\n");
+    }
+
+    if (heap_is_ready()) {
+        terminal_write("[ok] Heap ready.\n");
+        serial_write("[ok] Heap ready.\n");
+    } else {
+        terminal_write("[warn] Heap unavailable.\n");
+        serial_write("[warn] Heap unavailable.\n");
     }
 
     shell_init();
