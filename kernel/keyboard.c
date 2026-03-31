@@ -6,6 +6,8 @@
 
 #define KEYBOARD_DATA_PORT 0x60
 #define KEYBOARD_BUFFER_SIZE 128
+#define SCANCODE_LSHIFT 42
+#define SCANCODE_RSHIFT 54
 
 static const char scancode_map[128] = {
     [1] = 27,
@@ -24,8 +26,26 @@ static const char scancode_map[128] = {
     [74] = '-', [78] = '+'
 };
 
+static const char scancode_shift_map[128] = {
+    [1] = 27,
+    [2] = '!', [3] = '@', [4] = '#', [5] = '$', [6] = '%', [7] = '^',
+    [8] = '&', [9] = '*', [10] = '(', [11] = ')', [12] = '_', [13] = '+',
+    [14] = '\b', [15] = '\t',
+    [16] = 'Q', [17] = 'W', [18] = 'E', [19] = 'R', [20] = 'T', [21] = 'Y',
+    [22] = 'U', [23] = 'I', [24] = 'O', [25] = 'P', [26] = '{', [27] = '}',
+    [28] = '\n',
+    [30] = 'A', [31] = 'S', [32] = 'D', [33] = 'F', [34] = 'G', [35] = 'H',
+    [36] = 'J', [37] = 'K', [38] = 'L', [39] = ':', [40] = '"', [41] = '~',
+    [43] = '|',
+    [44] = 'Z', [45] = 'X', [46] = 'C', [47] = 'V', [48] = 'B', [49] = 'N',
+    [50] = 'M', [51] = '<', [52] = '>', [53] = '?',
+    [55] = '*', [57] = ' ',
+    [74] = '-', [78] = '+'
+};
+
 static volatile uint8_t keyboard_head;
 static volatile uint8_t keyboard_tail;
+static volatile uint8_t keyboard_shift_active;
 static char keyboard_buffer[KEYBOARD_BUFFER_SIZE];
 
 static void keyboard_buffer_push(char ch) {
@@ -41,17 +61,31 @@ static void keyboard_buffer_push(char ch) {
 
 static void keyboard_irq_handler(registers_t* regs) {
     uint8_t scancode;
+    uint8_t released;
+    uint8_t code;
     char ch;
 
     (void)regs;
 
     scancode = inb(KEYBOARD_DATA_PORT);
 
-    if ((scancode & 0x80u) != 0) {
+    released = (uint8_t)(scancode & 0x80u);
+    code = (uint8_t)(scancode & 0x7Fu);
+
+    if (code == SCANCODE_LSHIFT || code == SCANCODE_RSHIFT) {
+        keyboard_shift_active = (uint8_t)(released == 0);
         return;
     }
 
-    ch = scancode_map[scancode];
+    if (released != 0) {
+        return;
+    }
+
+    if (keyboard_shift_active) {
+        ch = scancode_shift_map[code];
+    } else {
+        ch = scancode_map[code];
+    }
 
     if (ch != 0) {
         keyboard_buffer_push(ch);
@@ -61,6 +95,7 @@ static void keyboard_irq_handler(registers_t* regs) {
 void keyboard_init(void) {
     keyboard_head = 0;
     keyboard_tail = 0;
+    keyboard_shift_active = 0;
     register_interrupt_handler(IRQ1, keyboard_irq_handler);
 }
 
