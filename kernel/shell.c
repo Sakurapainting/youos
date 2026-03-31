@@ -2,6 +2,7 @@
 #include <stdint.h>
 
 #include "keyboard.h"
+#include "memory.h"
 #include "pit.h"
 #include "shell.h"
 #include "terminal.h"
@@ -50,6 +51,7 @@ static void shell_print_help(void) {
     terminal_write("  about  - show build capabilities\n");
     terminal_write("  help   - show this help\n");
     terminal_write("  clear  - clear screen\n");
+    terminal_write("  meminfo- show memory map summary\n");
     terminal_write("  ticks  - show PIT ticks\n");
     terminal_write("  uptime - show uptime from PIT\n");
     terminal_write("  history- show recent commands\n");
@@ -105,6 +107,25 @@ static void shell_print_uptime(void) {
     terminal_write(", hz=");
     terminal_write_dec32(hz);
     terminal_write(")\n");
+}
+
+static void shell_print_meminfo(void) {
+    if (!memory_is_ready()) {
+        terminal_write("meminfo: unavailable\n");
+        return;
+    }
+
+    terminal_write("mem total: ");
+    terminal_write_dec32(memory_total_kb());
+    terminal_write(" KB\n");
+
+    terminal_write("mem avail: ");
+    terminal_write_dec32(memory_available_kb());
+    terminal_write(" KB\n");
+
+    terminal_write("regions  : ");
+    terminal_write_dec32(memory_region_count());
+    terminal_putchar('\n');
 }
 
 static void shell_print_history(void) {
@@ -173,6 +194,11 @@ static void shell_execute(const char* command) {
 
     if (streq(cursor, "history")) {
         shell_print_history();
+        return;
+    }
+
+    if (streq(cursor, "meminfo")) {
+        shell_print_meminfo();
         return;
     }
 

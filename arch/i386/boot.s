@@ -22,7 +22,10 @@ global _start:function
 _start:
     mov esp, stack_top    ; 设置栈指针
     extern kernel_main
+    push ebx              ; Multiboot info address
+    push eax              ; Multiboot magic
     call kernel_main      ; 跳转到 C 语言
+    add esp, 8
     cli
 .hang:  hlt               ; 停机
     jmp .hang
