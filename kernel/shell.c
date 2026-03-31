@@ -108,7 +108,15 @@ static void shell_on_char(char ch) {
         return;
     }
 
-    if (ch == '\b' || ch == '\t') {
+    if (ch == '\b') {
+        if (shell_line_len > 0) {
+            shell_line_len--;
+            terminal_backspace();
+        }
+        return;
+    }
+
+    if (ch == '\t') {
         return;
     }
 

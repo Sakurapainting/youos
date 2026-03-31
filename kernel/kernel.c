@@ -53,6 +53,24 @@ void terminal_clear(void) {
     terminal_initialize();
 }
 
+void terminal_backspace(void) {
+    size_t idx;
+
+    if (terminal_col == 0) {
+        if (terminal_row == 0) {
+            return;
+        }
+
+        terminal_row--;
+        terminal_col = VGA_WIDTH - 1;
+    } else {
+        terminal_col--;
+    }
+
+    idx = terminal_row * VGA_WIDTH + terminal_col;
+    vga_buffer[idx] = vga_entry(' ', terminal_color);
+}
+
 /* ── 写单个字符，支持 '\n' 换行 + 自动滚动 ── */
 void terminal_putchar(char ch) {
     if (ch == '\n') {
