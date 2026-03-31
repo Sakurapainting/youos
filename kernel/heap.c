@@ -147,6 +147,14 @@ uint32_t heap_used_bytes(void) {
     return used;
 }
 
+uint32_t heap_start_addr(void) {
+    return (uint32_t)heap_start;
+}
+
+uint32_t heap_end_addr(void) {
+    return (uint32_t)heap_end;
+}
+
 uint32_t heap_total_bytes(void) {
     if (!heap_ready) {
         return 0u;
