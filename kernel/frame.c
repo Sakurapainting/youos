@@ -61,7 +61,7 @@ static uint32_t align_up_u32(uint32_t value, uint32_t align) {
     return (value + align - 1u) & ~(align - 1u);
 }
 
-static void frame_mark_range(uint32_t start_addr, uint32_t length, int used) {
+static void frame_range_set(uint32_t start_addr, uint32_t length, int used) {
     uint32_t start = align_down(start_addr, FRAME_SIZE) / FRAME_SIZE;
     uint32_t end = align_up_u32(start_addr + length, FRAME_SIZE) / FRAME_SIZE;
 
@@ -76,6 +76,14 @@ static void frame_mark_range(uint32_t start_addr, uint32_t length, int used) {
             frame_clear(i);
         }
     }
+}
+
+void frame_reserve_range(uint32_t start_addr, uint32_t length) {
+    frame_range_set(start_addr, length, 1);
+}
+
+void frame_release_range(uint32_t start_addr, uint32_t length) {
+    frame_range_set(start_addr, length, 0);
 }
 
 static void frame_recount(void) {
@@ -125,7 +133,7 @@ void frame_init(uint32_t multiboot_magic, uint32_t multiboot_addr) {
             }
 
             if (entry->type == 1u) {
-                frame_mark_range(entry->addr_low, entry->len_low, 0);
+                frame_release_range(entry->addr_low, entry->len_low);
             }
         }
 
@@ -137,11 +145,11 @@ void frame_init(uint32_t multiboot_magic, uint32_t multiboot_addr) {
         frame_total_frames = MAX_FRAMES;
     }
 
-    frame_mark_range(0u, 0x100000u, 1);
-    frame_mark_range(0x100000u, (uint32_t)((uintptr_t)&__kernel_end - 0x100000u), 1);
-    frame_mark_range(heap_start_addr(), heap_end_addr() - heap_start_addr(), 1);
-    frame_mark_range(multiboot_addr, (uint32_t)sizeof(multiboot_info_t), 1);
-    frame_mark_range(mbi->mmap_addr, mbi->mmap_length, 1);
+    frame_reserve_range(0u, 0x100000u);
+    frame_reserve_range(0x100000u, (uint32_t)((uintptr_t)&__kernel_end - 0x100000u));
+    frame_reserve_range(heap_start_addr(), heap_end_addr() - heap_start_addr());
+    frame_reserve_range(multiboot_addr, (uint32_t)sizeof(multiboot_info_t));
+    frame_reserve_range(mbi->mmap_addr, mbi->mmap_length);
 
     frame_recount();
     frame_ready = 1;
