@@ -2,6 +2,7 @@
 #include <stddef.h>
 
 #include "idt.h"
+#include "frame.h"
 #include "heap.h"
 #include "keyboard.h"
 #include "memory.h"
@@ -170,6 +171,10 @@ void kernel_main(uint32_t multiboot_magic, uint32_t multiboot_addr) {
     serial_write("[init] Heap setup...\n");
     heap_init();
 
+    terminal_write("[init] Frame allocator...\n");
+    serial_write("[init] Frame allocator...\n");
+    frame_init(multiboot_magic, multiboot_addr);
+
     terminal_write("[init] Keyboard setup...\n");
     serial_write("[init] Keyboard setup...\n");
     keyboard_init();
@@ -197,6 +202,14 @@ void kernel_main(uint32_t multiboot_magic, uint32_t multiboot_addr) {
     } else {
         terminal_write("[warn] Heap unavailable.\n");
         serial_write("[warn] Heap unavailable.\n");
+    }
+
+    if (frame_is_ready()) {
+        terminal_write("[ok] Frame allocator ready.\n");
+        serial_write("[ok] Frame allocator ready.\n");
+    } else {
+        terminal_write("[warn] Frame allocator unavailable.\n");
+        serial_write("[warn] Frame allocator unavailable.\n");
     }
 
     shell_init();

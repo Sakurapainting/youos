@@ -2,6 +2,7 @@
 #include <stdint.h>
 
 #include "heap.h"
+#include "frame.h"
 #include "keyboard.h"
 #include "memory.h"
 #include "pit.h"
@@ -51,9 +52,11 @@ static void shell_print_help(void) {
     terminal_write("Commands:\n");
     terminal_write("  about  - show build capabilities\n");
     terminal_write("  alloc N- allocate N bytes from heap (16-byte aligned)\n");
+    terminal_write("  allocpage- allocate one 4KB frame\n");
     terminal_write("  free X - free allocation by hex address\n");
     terminal_write("  help   - show this help\n");
     terminal_write("  clear  - clear screen\n");
+    terminal_write("  frameinfo- show frame allocator stats\n");
     terminal_write("  heap   - show heap usage\n");
     terminal_write("  meminfo- show memory map summary\n");
     terminal_write("  ticks  - show PIT ticks\n");
@@ -65,7 +68,7 @@ static void shell_print_help(void) {
 
 static void shell_print_about(void) {
     terminal_write("youOS: i386 educational kernel\n");
-    terminal_write("features: IDT, PIC, PIT, PS/2 keyboard, shell, heap, serial debug\n");
+    terminal_write("features: IDT, PIC, PIT, frames, heap, shell, serial debug\n");
 }
 
 static void shell_history_push(const char* command) {
@@ -171,6 +174,27 @@ static void shell_print_heap(void) {
     terminal_write(" bytes\n");
 }
 
+static void shell_print_frameinfo(void) {
+    if (!frame_is_ready()) {
+        terminal_write("frameinfo: unavailable\n");
+        return;
+    }
+
+    terminal_write("frames total: ");
+    terminal_write_dec32(frame_total());
+    terminal_write(" (" );
+    terminal_write_dec32(frame_total() * 4u);
+    terminal_write(" KB)\n");
+
+    terminal_write("frames used : ");
+    terminal_write_dec32(frame_used_count());
+    terminal_write("\n");
+
+    terminal_write("frames free : ");
+    terminal_write_dec32(frame_free_count());
+    terminal_write("\n");
+}
+
 static int shell_parse_uint32(const char* text, uint32_t* value_out) {
     uint32_t value = 0;
     int seen = 0;
@@ -249,6 +273,20 @@ static void shell_execute(const char* command) {
         return;
     }
 
+    if (streq(cursor, "allocpage")) {
+        uint32_t addr = frame_alloc();
+
+        if (addr == 0u) {
+            terminal_write("allocpage failed\n");
+            return;
+        }
+
+        terminal_write("allocpage: addr=0x");
+        terminal_write_hex32(addr);
+        terminal_putchar('\n');
+        return;
+    }
+
     if (starts_with(cursor, "alloc")) {
         uint32_t size = 0;
         void* addr;
@@ -295,6 +333,11 @@ static void shell_execute(const char* command) {
         return;
     }
 
+    if (streq(cursor, "frameinfo")) {
+        shell_print_frameinfo();
+        return;
+    }
+
     if (streq(cursor, "heap")) {
         shell_print_heap();
         return;
@@ -319,6 +362,19 @@ static void shell_execute(const char* command) {
 
     if (streq(cursor, "meminfo")) {
         shell_print_meminfo();
+        return;
+    }
+
+    if (starts_with(cursor, "freepage")) {
+        uint32_t addr = 0;
+
+        if (!shell_parse_hex32(cursor + 8, &addr)) {
+            terminal_write("usage: freepage <hex_addr>\n");
+            return;
+        }
+
+        frame_free(addr);
+        terminal_write("freepage: ok\n");
         return;
     }
 
