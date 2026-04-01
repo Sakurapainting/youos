@@ -2,7 +2,7 @@ CC = i686-elf-gcc
 AS = nasm
 CFLAGS = -std=gnu99 -ffreestanding -O2 -Wall -Wextra -Ikernel
 LDFLAGS = -ffreestanding -O2 -nostdlib -lgcc
-OBJS = build/boot.o build/isr.o build/kernel.o build/idt.o build/pic.o build/pit.o build/keyboard.o build/shell.o build/serial.o build/memory.o build/heap.o build/frame.o
+OBJS = build/boot.o build/isr.o build/kernel.o build/idt.o build/pic.o build/pit.o build/keyboard.o build/shell.o build/serial.o build/memory.o build/heap.o build/frame.o build/paging.o
 
 all: youos.bin
 
@@ -44,6 +44,9 @@ build/heap.o: kernel/heap.c kernel/heap.h | build-dir
 
 build/frame.o: kernel/frame.c kernel/frame.h kernel/heap.h | build-dir
 	$(CC) -c kernel/frame.c -o build/frame.o $(CFLAGS)
+
+build/paging.o: kernel/paging.c kernel/paging.h kernel/frame.h | build-dir
+	$(CC) -c kernel/paging.c -o build/paging.o $(CFLAGS)
 
 build-dir:
 	mkdir -p build
