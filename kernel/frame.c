@@ -131,10 +131,6 @@ void frame_init(uint32_t multiboot_magic, uint32_t multiboot_addr) {
             if (region_end > max_end) {
                 max_end = region_end;
             }
-
-            if (entry->type == 1u) {
-                frame_release_range(entry->addr_low, entry->len_low);
-            }
         }
 
         current += (uintptr_t)entry->size + sizeof(entry->size);
@@ -143,6 +139,17 @@ void frame_init(uint32_t multiboot_magic, uint32_t multiboot_addr) {
     frame_total_frames = align_up_u32(max_end, FRAME_SIZE) / FRAME_SIZE;
     if (frame_total_frames > MAX_FRAMES) {
         frame_total_frames = MAX_FRAMES;
+    }
+
+    current = (uintptr_t)mbi->mmap_addr;
+    while (current < end) {
+        const multiboot_mmap_entry_t* entry = (const multiboot_mmap_entry_t*)current;
+
+        if (entry->len_high == 0u && entry->type == 1u) {
+            frame_release_range(entry->addr_low, entry->len_low);
+        }
+
+        current += (uintptr_t)entry->size + sizeof(entry->size);
     }
 
     frame_reserve_range(0u, 0x100000u);
